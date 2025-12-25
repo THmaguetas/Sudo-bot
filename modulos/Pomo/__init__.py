@@ -11,8 +11,8 @@ all_pomodoros = {}
 info_user = {
     'pomodoro' : False,
     'time_start' : None,
-    'temp_estudo' : int(1*60),
-    'temp_descanso' : int(1*60)
+    'temp_estudo' : int(25*60),
+    'temp_descanso' : int(5*60)
 }
 
 
