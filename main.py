@@ -30,14 +30,14 @@ async def verify_full_time():
         await asyncio.sleep(1)
 
 
-# start
+# START
 @bot.event
 async def on_ready():
     bot.loop.create_task(verify_full_time())
     await bot.tree.sync()
     print('sudo@discord:~$ echo o sudo está online')
 
-# TRATAMENTO DE ERRO
+# TRATAMENTO DE ERRO (para prefixo)
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
@@ -54,20 +54,7 @@ async def on_command_error(ctx, error):
         print(f"Erro desconhecido: {error}")
 
 
-# github
-@bot.command()
-async def github(ctx):
-    await ctx.send('https://github.com/THmaguetas')
-
-# spam mention 
-@bot.command()
-async def mention(ctx, membro: str):
-    id_membro = int(membro.strip('<@!>'))
-    membro_pronto = ctx.guild.get_member(id_membro)
-    if membro_pronto:
-        for _ in range(1, 41):
-            await ctx.send(f'vamo acordar {membro_pronto.mention}')
-
+# -=-=- COMANDOS SLASH -=-=-
 
 # -=- POMODORO -=-
 pomodoro = app_commands.Group(
@@ -83,9 +70,9 @@ async def pomodoro_start(interaction: discord.Interaction):
     canal_id = interaction.channel.id
     pomo = Pomo.start(user_id, canal_id)
     if pomo == True:
-        await interaction.response.send_message('O pomodoro foi iniciado, bons estudos...')
+        await interaction.response.send_message(f'<@{user_id}> Pomodoro foi **iniciado**, bons estudos...')
     if pomo == False:
-        await interaction.response.send_message('O pomodoro já está ativo')
+        await interaction.response.send_message(f'<@{user_id}> Pomodoro já está ativo')
 
 
 @pomodoro.command(name='tempo', description='vê quando tempo do bloco falta')
@@ -93,9 +80,9 @@ async def pomodoro_tempo(interaction: discord.Interaction):
     user_id =interaction.user.id
     pomo = Pomo.tempo(user_id)
     if pomo == False:
-        await interaction.response.send_message(f'O pomodoro não está ativo, use o comando de start primeiro')
+        await interaction.response.send_message(f'O pomodoro **não está ativo**, use o comando de start primeiro')
     else:
-        await interaction.response.send_message(f'{pomo} minutos para este bloco acabar')
+        await interaction.response.send_message(f'<@{user_id}>, faltam **{pomo} minutos** para este bloco acabar')
 
 
 @pomodoro.command(name='stop', description='encerra o pomodoro')
@@ -103,19 +90,34 @@ async def pomodoro_stop(interaction: discord.Interaction):
     user_id =interaction.user.id
     pomo = Pomo.stop(user_id)
     if pomo == False:
-        await interaction.response.send_message(f'O pomodoro não está ativo, use o comando de start primeiro')
+        await interaction.response.send_message(f'<@{user_id}> Pomodoro **não está ativo**, use o comando de **start** primeiro')
     else:
-        await interaction.response.send_message('pomodoro desligado')
+        await interaction.response.send_message(f'<@{user_id}> Pomodoro **desligado**')
 
 
+# -=-=- COMANDOS DE PREFIXO -=-=-
+
+# github
+@bot.command()
+async def github(ctx):
+    await ctx.send('https://github.com/THmaguetas')
+
+# spam mention 
+@bot.command()
+async def mention(ctx, membro: str):
+    id_membro = int(membro.strip('<@!>'))
+    membro_pronto = ctx.guild.get_member(id_membro)
+    if membro_pronto:
+        for _ in range(1, 41):
+            await ctx.send(f'vamo acordar {membro_pronto.mention}')
 
 # -=- limpar chat -=-
 @bot.command()
+@commands.has_permissions(manage_messages=True)
 async def clear(ctx, quantidade: int = 100):
     if quantidade > 100:
         await ctx.send('o bot não limpa mais do que 100 mensagens por vez. ', delete_after=6)
-        await ctx.send(' -para conseguir apagar as mensagens, digite o comando e especifique o número de mensagens que deve ser apagado.', delete_after=6)
-        return
+        
     await ctx.channel.purge(limit = quantidade + 1)
 
 # -=- TOKEN DO BOT -=-
