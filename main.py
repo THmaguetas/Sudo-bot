@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from modulos import Pomo
-import funcs
+import modulos.funcs as funcs
 
 intents = discord.Intents.all()
 intents.members = True
