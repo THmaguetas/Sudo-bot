@@ -9,8 +9,11 @@ estado = {
 all_pomodoros = {}
 
 info_user = {
+    'canal' : None,
+    'msg' : None,
+    'embed_upd_timer' : 0,
     'pomodoro' : False,
-    'time_start' : None,
+    'time_start' : float,
     'temp_estudo' : int(25*60),
     'temp_descanso' : int(5*60)
 }
@@ -20,12 +23,11 @@ def start(user, canal_id):
     if user not in all_pomodoros:
         all_pomodoros[user] = info_user.copy()
 
-    info = all_pomodoros[user]
-    info['canal_id'] = canal_id
-
     if all_pomodoros[user]['pomodoro'] != estado['estudo']:
+
         all_pomodoros[user]['pomodoro'] = estado['estudo']
         all_pomodoros[user]['time_start'] = time.time()
+        all_pomodoros[user]['canal'] = canal_id
         return True
     else:
         return False
@@ -36,36 +38,43 @@ def tempo(user):
 
         if all_pomodoros[user]['pomodoro'] == estado['estudo']:
             tempo_restante = (all_pomodoros[user]['temp_estudo'] - (time.time() - all_pomodoros[user]['time_start']))/60
-            return f'**ESTUDO**: {tempo_restante:.1f}'
+            return (tempo_restante)
         
         elif all_pomodoros[user]['pomodoro'] == estado['descanso']:
             tempo_restante = (all_pomodoros[user]['temp_descanso'] - (time.time() - all_pomodoros[user]['time_start']))/60
-            return f'**DESCANSO**: {tempo_restante:.1f}'
+            return (tempo_restante)
         
-    else: False
+    else: return False
 
 
 def stop(user):
     if user in all_pomodoros:
         all_pomodoros[user]['pomodoro'] = estado['desligado']
-        all_pomodoros[user]['time_start'] = estado['descanso']
-    else: False
+        all_pomodoros[user]['time_start'] = float
+    else: return False
 
 
-def verify_time_pomodoro():
-    for user, info in all_pomodoros.items():
-        if info['pomodoro'] == estado['estudo']:
-            contagem = time.time() - info['time_start']
-            if contagem >= info['temp_estudo']:
-                info['pomodoro'] = estado['descanso']
-                info['time_start'] = time.time()
-                return user
-        
-        elif info['pomodoro'] == estado['descanso']:
-            contagem = time.time() - info['time_start']
-            if contagem >= info['temp_descanso']:
-                info['pomodoro'] = estado['estudo']
-                info['time_start'] = time.time()
-                return user
+def verify_time_pomodoro(usr, inf):
+    if inf['pomodoro'] == estado['estudo']:
+
+        contagem = time.time() - inf['time_start']
+
+        if contagem >= inf['temp_estudo']:
+
+            inf['pomodoro'] = estado['descanso']
+            inf['time_start'] = time.time()
+            return usr
+    
+
+    elif inf['pomodoro'] == estado['descanso']:
+
+        contagem = time.time() - inf['time_start']
+
+        if contagem >= inf['temp_descanso']:
+
+            inf['pomodoro'] = estado['estudo']
+            inf['time_start'] = time.time()
+            return usr
+            
     return None
 
