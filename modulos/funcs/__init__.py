@@ -15,7 +15,7 @@ def embed_pomodoro(bloco_atual, tempo_restante):
 
     embed.add_field(
         name='Tempo restante no bloco:',
-        value=f'Restam {tempo_restante:.1f} minutos',
+        value=f'Restam **{tempo_restante:.0f}** minutos',
         inline= True
     )
     return embed

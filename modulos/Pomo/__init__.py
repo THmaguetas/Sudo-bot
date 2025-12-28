@@ -11,10 +11,11 @@ all_pomodoros = {}
 info_user = {
     'canal' : None,
     'msg' : None,
+    'is_dm' : False,
     'embed_upd_timer' : 0,
     'pomodoro' : False,
     'time_start' : float,
-    'temp_estudo' : int(25*60),
+    'temp_estudo' : int(1*60),
     'temp_descanso' : int(5*60)
 }
 
