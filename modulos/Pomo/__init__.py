@@ -20,7 +20,7 @@ info_user = {
 }
 
 
-def start(user, canal_id):
+def start(user, canal_id, is_dm):
     if user not in all_pomodoros:
         all_pomodoros[user] = info_user.copy()
 
@@ -29,6 +29,7 @@ def start(user, canal_id):
         all_pomodoros[user]['pomodoro'] = estado['estudo']
         all_pomodoros[user]['time_start'] = time.time()
         all_pomodoros[user]['canal'] = canal_id
+        all_pomodoros[user]['is_dm'] = is_dm
         return True
     else:
         return False
@@ -50,8 +51,7 @@ def tempo(user):
 
 def stop(user):
     if user in all_pomodoros:
-        all_pomodoros[user]['pomodoro'] = estado['desligado']
-        all_pomodoros[user]['time_start'] = float
+        all_pomodoros[user] = info_user.copy()
     else: return False
 
 

@@ -7,14 +7,14 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from modulos import Pomo
-import modulos.funcs as funcs
+from modulos import funcs_dc
 
 intents = discord.Intents.all()
 intents.members = True
 intents.message_content = True
 intents.guilds = True
 
-bot = commands.Bot(command_prefix='s.', intents=intents)
+bot = commands.Bot(command_prefix='.', intents=intents)
 
 # -=- função de verificação de tarefas -=-
 async def verify_upd_embed_pomo():
@@ -71,7 +71,7 @@ async def verify_upd_embed_pomo():
 
                 # envia a embed atualizada
                 await msg.edit(
-                    embed=funcs.embed_pomodoro(bloco_act_pomo, tempo)
+                    embed=funcs_dc.embed_pomodoro(bloco_act_pomo, tempo)
                 )
                 print(f'EMBED DO: {user_id} foi atualizada. Bloco: {bloco_act_pomo}, Tempo: {tempo}')
 
@@ -115,36 +115,44 @@ pomodoro = app_commands.Group(
 )
 bot.tree.add_command(pomodoro)
 
-
+# comando de start do pomodoro
 @pomodoro.command(name='start', description='inicia o pomodoro')
 async def pomodoro_start(interaction: discord.Interaction):
-
-    user_id =interaction.user.id
-    if isinstance(interaction.channel, discord.DMChannel):
-        canal = await interaction.user.create_dm()
-        is_dm = True
-    else:
-        canal = interaction.channel
-        is_dm = False
-
-    Pomo.start(user_id, canal.id)
-
-    Pomo.all_pomodoros[user_id]['is_dm'] = is_dm
-
-    # converte os valores binários do bloco para a palavra certa
-    if Pomo.all_pomodoros[user_id]['pomodoro'] == True:
-        bloco_act_pomo = 'estudo'
-    elif Pomo.all_pomodoros[user_id]['pomodoro'] == None:
-        bloco_act_pomo = 'descanso'
-
-    tempo = Pomo.tempo(user_id)
-
-    await interaction.response.send_message(
-        embed=funcs.embed_pomodoro(bloco_act_pomo, tempo)
-        )
     
-    msg = await interaction.original_response()
-    Pomo.all_pomodoros[user_id]['msg'] = msg.id
+        user_id = interaction.user.id
+
+        if isinstance(interaction.channel, discord.DMChannel):
+            canal = await interaction.user.create_dm()
+            is_dm = True
+        else:
+            canal = interaction.channel
+            is_dm = False
+
+        Pomo.start(user_id, canal.id, is_dm)
+
+        if Pomo.all_pomodoros[user_id]['msg'] is None:
+
+            # converte os valores binários do bloco para a palavra certa
+            if Pomo.all_pomodoros[user_id]['pomodoro'] == True:
+                bloco_act_pomo = 'estudo'
+            elif Pomo.all_pomodoros[user_id]['pomodoro'] == None:
+                bloco_act_pomo = 'descanso'
+
+            tempo = Pomo.tempo(user_id)
+
+            await interaction.response.send_message(
+                embed=funcs_dc.embed_pomodoro(bloco_act_pomo, tempo)
+                )
+            
+            msg = await interaction.original_response()
+            Pomo.all_pomodoros[user_id]['msg'] = msg.id
+
+        else:
+            await interaction.response.send_message(
+                'você já tem uma tabela pomodoro ativa',
+                ephemeral=True,
+                delete_after=5
+            )
 
 
 @pomodoro.command(name='stop', description='encerra o pomodoro')
@@ -154,7 +162,8 @@ async def pomodoro_stop(interaction: discord.Interaction):
     if pomo == False:
         await interaction.response.send_message(
             'Pomodoro **não está ativo**, use o comando de **start** primeiro',
-            ephemeral=True
+            ephemeral=True,
+            delete_after=5
             )
     else:
         await interaction.response.send_message(
