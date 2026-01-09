@@ -5,9 +5,11 @@ import asyncio
 import time
 import os
 from dotenv import load_dotenv
-load_dotenv()
-from modulos import Pomo
 from modulos import funcs_dc
+from modulos import Pomo
+from modulos import Agenda
+
+load_dotenv()
 
 intents = discord.Intents.all()
 intents.members = True
@@ -73,7 +75,7 @@ async def verify_upd_embed_pomo():
                 await msg.edit(
                     embed=funcs_dc.embed_pomodoro(bloco_act_pomo, tempo)
                 )
-                print(f'EMBED DO: {user_id} foi atualizada. Bloco: {bloco_act_pomo}, Tempo: {tempo}')
+                print(f'EMBED DO: {user_id} foi atualizada. Bloco: {bloco_act_pomo}, Tempo: {tempo:.1f}')
 
                 info['embed_upd_timer'] = time.time()
 
@@ -117,7 +119,11 @@ bot.tree.add_command(pomodoro)
 
 # comando de start do pomodoro
 @pomodoro.command(name='start', description='inicia o pomodoro')
-async def pomodoro_start(interaction: discord.Interaction):
+@app_commands.describe(
+    estudo='tempo do bloco de estudo', 
+    descanso='tempo do bloco de descanso'
+)
+async def pomodoro_start(interaction: discord.Interaction, estudo: int=25, descanso: int=5):
     
         user_id = interaction.user.id
 
@@ -128,7 +134,8 @@ async def pomodoro_start(interaction: discord.Interaction):
             canal = interaction.channel
             is_dm = False
 
-        Pomo.start(user_id, canal.id, is_dm)
+        Pomo.start(user_id, canal.id, is_dm, estudo, descanso)
+        print(f'{user_id} ligou o pomodoro')
 
         if Pomo.all_pomodoros[user_id]['msg'] is None:
 
@@ -140,10 +147,12 @@ async def pomodoro_start(interaction: discord.Interaction):
 
             tempo = Pomo.tempo(user_id)
 
+            # carrega a envia a embed no chat
             await interaction.response.send_message(
                 embed=funcs_dc.embed_pomodoro(bloco_act_pomo, tempo)
                 )
             
+            # pega o id da embed pra poder editar ela 
             msg = await interaction.original_response()
             Pomo.all_pomodoros[user_id]['msg'] = msg.id
 
@@ -152,7 +161,7 @@ async def pomodoro_start(interaction: discord.Interaction):
                 'você já tem uma tabela pomodoro ativa',
                 ephemeral=True,
                 delete_after=5
-            )
+                )
 
 
 @pomodoro.command(name='stop', description='encerra o pomodoro')
@@ -166,10 +175,33 @@ async def pomodoro_stop(interaction: discord.Interaction):
             delete_after=5
             )
     else:
+        print(f'{user_id} desligou o pomodoro')
         await interaction.response.send_message(
             'Pomodoro **desligado**',
             ephemeral=True
             )
+
+
+
+# -=- AGENDA DE TAREFAS -=-
+agenda = app_commands.Group(
+    name='agenda',
+    description='agendamento de tarefas'
+)
+bot.tree.add_command(agenda)
+
+@agenda.command(name='add', description='adiciona um lembrete')
+@app_commands.describe(
+    cargo = 'mencionará o cargo escolhido',
+    tarefa = 'tarefa escolhida para o lembrete',
+    data = 'data que o lembrete irá tocar',
+    hora = 'hora que o lembrete irá tocar'
+)
+async def agenda_add(interaction: discord.Interaction, cargo: discord.Role, tarefa: str, data: str, hora: str):
+    server_id = interaction.guild_id
+    cargo_id = cargo.id
+
+    Agenda.add_task(server_id, cargo_id, tarefa, data, hora)
 
 
 # -=-=- COMANDOS DE PREFIXO -=-=-
@@ -186,7 +218,7 @@ async def mention(ctx, membro: str):
     membro_pronto = ctx.guild.get_member(id_membro)
     if membro_pronto:
         for _ in range(1, 41):
-            await ctx.send(f'vamo acordar {membro_pronto.mention}')
+            await ctx.send(f'{membro_pronto.mention}')
 
 # -=- limpar chat -=-
 @bot.command()
