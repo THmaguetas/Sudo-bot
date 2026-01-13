@@ -1,11 +1,13 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord.errors import NotFound, Forbidden, HTTPException
 import asyncio
 import time
+from datetime import datetime
 import os
 from dotenv import load_dotenv
-from modulos import funcs_dc
+from modulos import embeds
 from modulos import Pomo
 from modulos import Agenda
 
@@ -18,7 +20,41 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix='.', intents=intents)
 
-# -=- função de verificação de tarefas -=-
+# -=-=- TASKS -=-=-
+
+# -=- função de verificação da agenda -=-
+async def verify_agenda():
+    while True:
+        agenda_json = Agenda.load_agenda()
+
+        for server_id, eventos in list(agenda_json.items()):
+
+            for event, items in list(eventos.items()):
+
+                if items['notificado'] == False and datetime.strptime(items['data_hora'], "%d/%m/%Y %H:%M") <= datetime.now():
+                    canal_id = int(items['canal'])
+                    canal = bot.get_channel(canal_id)
+                    if canal is None:
+                        continue
+
+                    try:
+                        await canal.send(
+                            f"🔔 <@&{items['cargo']}> 🔔",
+                            embed=embeds.embed_agenda(
+                                title=items['tarefa'], 
+                                desc=items['descricao'], 
+                                cargo=items['cargo']) 
+                        )
+                        items['notificado'] = True
+                    except NotFound and Forbidden and HTTPException:
+                        continue
+
+                    Agenda.save_agenda(agenda_json)
+
+        await asyncio.sleep(60)
+
+
+# -=- função de verificação do pomodoro -=-
 async def verify_upd_embed_pomo():
     while True:
         for user_id, info in Pomo.all_pomodoros.items():
@@ -73,9 +109,8 @@ async def verify_upd_embed_pomo():
 
                 # envia a embed atualizada
                 await msg.edit(
-                    embed=funcs_dc.embed_pomodoro(bloco_act_pomo, tempo)
+                    embed=embeds.embed_pomodoro(bloco_act_pomo, tempo)
                 )
-                print(f'EMBED DO: {user_id} foi atualizada. Bloco: {bloco_act_pomo}, Tempo: {tempo:.1f}')
 
                 info['embed_upd_timer'] = time.time()
 
@@ -88,8 +123,9 @@ async def verify_upd_embed_pomo():
 async def on_ready():
     Pomo.all_pomodoros.clear()
     bot.loop.create_task(verify_upd_embed_pomo())
+    bot.loop.create_task(verify_agenda())
     await bot.tree.sync()
-    print('sudo@discord:~$ echo o sudo está online')
+    print(f'[{datetime.now()}] sudo@discord:~$ echo o sudo está online')
 
 # TRATAMENTO DE ERRO (para prefixo)
 @bot.event
@@ -135,7 +171,6 @@ async def pomodoro_start(interaction: discord.Interaction, estudo: int=25, desca
             is_dm = False
 
         Pomo.start(user_id, canal.id, is_dm, estudo, descanso)
-        print(f'{user_id} ligou o pomodoro')
 
         if Pomo.all_pomodoros[user_id]['msg'] is None:
 
@@ -149,7 +184,7 @@ async def pomodoro_start(interaction: discord.Interaction, estudo: int=25, desca
 
             # carrega a envia a embed no chat
             await interaction.response.send_message(
-                embed=funcs_dc.embed_pomodoro(bloco_act_pomo, tempo)
+                embed=embeds.embed_pomodoro(bloco_act_pomo, tempo)
                 )
             
             # pega o id da embed pra poder editar ela 
@@ -175,7 +210,6 @@ async def pomodoro_stop(interaction: discord.Interaction):
             delete_after=5
             )
     else:
-        print(f'{user_id} desligou o pomodoro')
         await interaction.response.send_message(
             'Pomodoro **desligado**',
             ephemeral=True
@@ -194,14 +228,29 @@ bot.tree.add_command(agenda)
 @app_commands.describe(
     cargo = 'mencionará o cargo escolhido',
     tarefa = 'tarefa escolhida para o lembrete',
+    desc = 'descrição da tarefa',
     data = 'data que o lembrete irá tocar',
     hora = 'hora que o lembrete irá tocar'
 )
-async def agenda_add(interaction: discord.Interaction, cargo: discord.Role, tarefa: str, data: str, hora: str):
-    server_id = interaction.guild_id
+async def agenda_add(interaction: discord.Interaction, cargo: discord.Role, tarefa: str, desc: str, data: str, hora: str):
+    server_id = str(interaction.guild_id)
     cargo_id = cargo.id
+    canal = interaction.channel.id
 
-    Agenda.add_task(server_id, cargo_id, tarefa, data, hora)
+    data_hora = Agenda.valid_data(data=data, time=hora)
+
+    if data_hora != False:
+        # salva as infos da nova tarefa no json
+        Agenda.add_task(server_id, cargo_id, tarefa, desc, data_hora, canal)
+        await interaction.response.send_message(
+            f'Tarefa agendada com socesso para o cargo <@&{cargo_id}>!!'
+        )
+    else:
+        await interaction.response.send_message(
+            '''Digite a data ou a hora da maneira correta. 
+Siga os padrões BR: **dia/mês/ano**  e  **hora:minuto**.
+E insira uma data futura.'''
+        )
 
 
 # -=-=- COMANDOS DE PREFIXO -=-=-
@@ -241,5 +290,5 @@ async def clear(ctx, quantidade: int = 100):
 
 
 # -=- TOKEN DO BOT -=-
-token = os.getenv("BOT_TOKEN")
+token = os.getenv("SUDO_TOKEN")
 bot.run(token)
