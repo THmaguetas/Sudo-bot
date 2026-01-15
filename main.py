@@ -25,34 +25,41 @@ bot = commands.Bot(command_prefix='.', intents=intents)
 # -=- função de verificação da agenda -=-
 async def verify_agenda():
     while True:
-        agenda_json = Agenda.load_agenda()
+        agenda = Agenda.load_agenda()
+        alterado = False
 
-        for server_id, eventos in list(agenda_json.items()):
+        for server_id, eventos in agenda.items():
+            for event_id, items in eventos.items():
 
-            for event, items in list(eventos.items()):
+                if not items["notificado"]:
+                    data_evento = datetime.strptime(
+                        items["data_hora"], "%d/%m/%Y %H:%M"
+                    )
 
-                if items['notificado'] == False and datetime.strptime(items['data_hora'], "%d/%m/%Y %H:%M") <= datetime.now():
-                    canal_id = int(items['canal'])
-                    canal = bot.get_channel(canal_id)
-                    if canal is None:
-                        continue
+                    if data_evento <= datetime.now():
+                        canal = bot.get_channel(int(items["canal"]))
+                        if canal is None:
+                            continue
 
-                    try:
-                        await canal.send(
-                            f"🔔 <@&{items['cargo']}> 🔔",
-                            embed=embeds.embed_agenda(
-                                title=items['tarefa'], 
-                                desc=items['descricao'], 
-                                cargo=items['cargo']) 
-                        )
-                        items['notificado'] = True
-                    except NotFound and Forbidden and HTTPException:
-                        continue
+                        try:
+                            await canal.send(
+                                f"🔔 <@&{items['cargo']}> 🔔",
+                                embed=embeds.embed_agenda(
+                                    title=items["tarefa"],
+                                    desc=items["descricao"],
+                                    cargo=items["cargo"]
+                                )
+                            )
+                            items["notificado"] = True
+                            alterado = True
 
-                    Agenda.save_agenda(agenda_json)
+                        except (NotFound, Forbidden, HTTPException):
+                            continue
+
+        if alterado:
+            Agenda.save_agenda(agenda)
 
         await asyncio.sleep(60)
-
 
 # -=- função de verificação do pomodoro -=-
 async def verify_upd_embed_pomo():
@@ -117,8 +124,7 @@ async def verify_upd_embed_pomo():
         await asyncio.sleep(1)
 
 
-
-# START
+# -=-=- START -=-=-
 @bot.event
 async def on_ready():
     Pomo.all_pomodoros.clear()
@@ -243,14 +249,41 @@ async def agenda_add(interaction: discord.Interaction, cargo: discord.Role, tare
         # salva as infos da nova tarefa no json
         Agenda.add_task(server_id, cargo_id, tarefa, desc, data_hora, canal)
         await interaction.response.send_message(
-            f'Tarefa agendada com socesso para o cargo <@&{cargo_id}>!!'
+            embed= embeds.embed_simples(texto=f'Tarefa agendada com sucesso para o cargo <@&{cargo_id}>!!'),
+            ephemeral=True
+        )
+    else:
+        texto = '''Digite a data ou a hora da maneira correta. 
+Siga os padrões BR: **dia/mês/ano**  e  **hora:minuto**.    
+E insira uma **data futura**.'''        
+        await interaction.response.send_message(
+            embed=embeds.embed_simples(titulo='ERRO!', texto=texto, cor=discord.Color.red())            
+        )
+
+
+@agenda.command(name='list', description='mostra os lembretes já marcados')
+@app_commands.describe(
+    cargo = 'listar os lembretes apenas do cargo selecionado'
+)
+async def agenda_list(interaction: discord.Integration, cargo: discord.Role | None=None):
+    server_id = str(interaction.guild_id)
+
+    if cargo is not None:
+        cargo_id = cargo.id
+        eventos_valid = Agenda.list_agenda(server_id, cargo_id)
+    else:
+        eventos_valid = Agenda.list_agenda(server_id=server_id)
+
+    if len(eventos_valid) != 0:
+        texto = "\n".join(eventos_valid)
+        await interaction.response.send_message(
+            embed= embeds.embed_simples(titulo='Lembretes Pendentes:', texto=texto)
         )
     else:
         await interaction.response.send_message(
-            '''Digite a data ou a hora da maneira correta. 
-Siga os padrões BR: **dia/mês/ano**  e  **hora:minuto**.
-E insira uma data futura.'''
+            embed=embeds.embed_simples(texto='não existe nenhum lembrete agendado', cor=discord.Color.red())
         )
+
 
 
 # -=-=- COMANDOS DE PREFIXO -=-=-
@@ -258,7 +291,9 @@ E insira uma data futura.'''
 # github
 @bot.command()
 async def github(ctx):
-    await ctx.send('https://github.com/THmaguetas')
+    await ctx.send(
+        embed=embeds.embed_simples(titulo='Github do adm:', texto='https://github.com/THmaguetas') 
+        )
 
 # spam mention 
 @bot.command()
@@ -269,26 +304,33 @@ async def mention(ctx, membro: str):
         for _ in range(1, 41):
             await ctx.send(f'{membro_pronto.mention}')
 
-# -=- limpar chat -=-
+# limpeza de chat
 @bot.command()
-#@commands.cooldown(1, 5, commands.BucketType.channel)
 async def clear(ctx, quantidade: int = 100):
-    if ctx.author.id == int(os.getenv("TH_ID")) or ctx.author.guild_permissions.manage_messages:
-        if quantidade > 100:
-            await ctx.send(
-                f'{ctx.author.id} o bot não limpa mais do que 100 mensagens por vez. ',
-                delete_after=6
-                )
-        
-        await ctx.channel.purge(limit = quantidade + 1)
 
-    else:
+    if not (ctx.author.id == int(os.getenv("TH_ID")) or ctx.author.guild_permissions.manage_messages):
         await ctx.send(
             f'<@{ctx.author.id}> você não tem permissão para usar esse comando',
             delete_after=6
-            )
+        )
+
+    # valida quantidade
+    if quantidade < 1:
+        await ctx.send(
+            "A quantidade deve ser maior que 0.",
+            delete_after=5
+        )
+
+    if quantidade > 100:
+        await ctx.send(
+            "O bot não limpa mais do que 100 mensagens por vez.",
+            delete_after=6
+        )
+
+    # apaga mensagens (+1 para apagar o comando)
+    await ctx.channel.purge(limit=quantidade + 1)
 
 
 # -=- TOKEN DO BOT -=-
-token = os.getenv("SUDO_TOKEN")
+token = os.getenv("THEO_TOKEN")
 bot.run(token)

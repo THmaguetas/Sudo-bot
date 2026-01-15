@@ -6,7 +6,6 @@ from datetime import datetime
 def load_agenda():
     with open('storage/agenda.json', 'r', encoding='utf-8') as file:
         return json.load(file)
-agenda_json = load_agenda()
 
 
 def save_agenda(infos):
@@ -15,6 +14,8 @@ def save_agenda(infos):
 
 
 def add_task(server_id, cargo_id, tarefa, desc, data_hora, canal):
+    agenda_json = load_agenda()
+    
     evento_id = str(time.time())
     itens_evento = {
         "canal" : canal,
@@ -50,4 +51,23 @@ def valid_data(data, time):
     
     except ValueError:
         return False
+
+
+def list_agenda(server_id, cargo_id=None):
+    agenda_json = load_agenda()
+
+    eventos_validos = []
+    eventos_validos.clear()
+
+    if cargo_id == None:
+        for evento_id, itens in agenda_json[server_id].items():
+            if itens['notificado'] is False:
+                eventos_validos.append(itens["tarefa"])
+                
+    else:
+        for evento_id, itens in agenda_json[server_id].items():
+            if itens['notificado'] is False and itens['cargo'] == cargo_id:
+                eventos_validos.append(itens["tarefa"])
     
+    return eventos_validos
+
