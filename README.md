@@ -1,10 +1,11 @@
 # Sobre:
- Esse projeto é um bot do discord, que (por enquanto) está focado no auxílio em estudos.
+ Esse projeto é um bot do discord que, por enquanto, está focado no auxílio em estudos.
  No momendo ele conta com comandos para estudo comunitário em servidores do discord
 
 ## comandos
-- pomodoro
+- cronômetro
 - agenda
+- rank
 - clear
 
 # Link do bot:
