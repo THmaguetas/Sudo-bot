@@ -14,13 +14,14 @@ info_user = {
     'is_dm' : False,
     'embed_upd_timer' : 0,
     'pomodoro' : False,
+    'blocos' : 0,
     'time_start' : float,
     'temp_estudo' : int,
     'temp_descanso' : int
 }
 
 
-def start(user, canal_id, is_dm, estudo, descanso):
+def start(user, canal_id, is_dm, blocos, estudo, descanso):
     if user not in all_pomodoros:
         all_pomodoros[user] = info_user.copy()
 
@@ -29,6 +30,7 @@ def start(user, canal_id, is_dm, estudo, descanso):
         all_pomodoros[user]['temp_estudo'] = estudo*60
         all_pomodoros[user]['temp_descanso'] = descanso*60
 
+        all_pomodoros[user]['blocos'] = blocos
         all_pomodoros[user]['pomodoro'] = estado['estudo']
         all_pomodoros[user]['time_start'] = time.time()
 
@@ -79,6 +81,7 @@ def verify_time_pomodoro(usr, inf):
 
             inf['pomodoro'] = estado['estudo']
             inf['time_start'] = time.time()
+            inf['blocos'] -= 1
             return usr
             
     return None

@@ -4,8 +4,8 @@ from datetime import datetime
 
 # carrega o json para o código
 def load_agenda():
-    with open('storage/agenda.json', 'r', encoding='utf-8') as file:
-        return json.load(file)
+    with open('storage/agenda.json', 'r', encoding='utf-8') as arquivo:
+        return json.load(arquivo)
 
 
 def save_agenda(infos):

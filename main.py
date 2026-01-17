@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from modulos import embeds
 from modulos import Pomo
 from modulos import Agenda
+from modulos import Rank
 
 load_dotenv()
 
@@ -20,9 +21,11 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix='.', intents=intents)
 
-# -=-=- TASKS -=-=-
+    ###########
+    ## TASKS ##
+    ###########
 
-# -=- função de verificação da agenda -=-
+# função de verificação da agenda
 async def verify_agenda():
     while True:
         agenda = Agenda.load_agenda()
@@ -61,7 +64,8 @@ async def verify_agenda():
 
         await asyncio.sleep(60)
 
-# -=- função de verificação do pomodoro -=-
+
+# função de verificação do pomodoro
 async def verify_upd_embed_pomo():
     while True:
         for user_id, info in Pomo.all_pomodoros.items():
@@ -69,35 +73,12 @@ async def verify_upd_embed_pomo():
             # verifica troca de bloco
             changed_user = Pomo.verify_time_pomodoro(usr=user_id, inf=info)
 
-            # notificação no pv do cabra
-            if changed_user:
-                discord_user = bot.get_user(changed_user)
-                if discord_user:
-                    if info['pomodoro'] == Pomo.estado['descanso']:
-                        await discord_user.send(
-                            f'<@{changed_user}> BLOCO DE **ESTUDO TERMINADO!!** descanse por 5 minutos...',
-                            delete_after=180
-                        )
-                    elif info['pomodoro'] == Pomo.estado['estudo']:
-                        await discord_user.send(
-                            f'<@{changed_user}> BLOCO DE **DESCANSO TERMINADO!!** vamos voltar aos estudos...',
-                            delete_after=180
-                        )
-
-            # atualização da embed
-            if (info['pomodoro'] != Pomo.estado['desligado']) and (info.get('msg') != None) and (time.time() - info.get('embed_upd_timer', 0) > 30):
-
-                # acha o canal 
-                if info.get('is_dm'):
-                    discord_user = bot.get_user(user_id)
-                    if not discord_user:
-                        continue
-                    canal = await discord_user.create_dm()
-                else:
-                    canal = bot.get_channel(info['canal'])
-
-                if (canal is None):
-                    continue
+            if info['blocos'] <= 0 and info['pomodoro'] != Pomo.estado['desligado']:
+                info['pomodoro'] = Pomo.estado['desligado']
+                await discord_user.send(
+                    embed=embeds.embed_simples(texto='Seus blocos de estudo acabaram!! Parabéns!', cor=discord.Color.green()),
+                    delete_after=360
+                )
 
                 try:
                     msg = await canal.fetch_message(info['msg'])
@@ -109,17 +90,71 @@ async def verify_upd_embed_pomo():
                     bloco_act_pomo = 'estudo'
                 elif info['pomodoro'] == Pomo.estado['descanso']:
                     bloco_act_pomo = 'descanso'
-                else:
-                    continue
-
+                elif info['pomodoro'] == Pomo.estado['desligado']:
+                    bloco_act_pomo = 'desligado'
                 tempo = Pomo.tempo(user_id)
+                blocos = Pomo.all_pomodoros[user_id]['blocos']
 
                 # envia a embed atualizada
                 await msg.edit(
-                    embed=embeds.embed_pomodoro(bloco_act_pomo, tempo)
-                )
+                    embed=embeds.embed_pomodoro(bloco_act_pomo, tempo, blocos)
+                    )
 
-                info['embed_upd_timer'] = time.time()
+
+            else:
+
+                # notificação no pv do cabra
+                if changed_user:
+                    discord_user = bot.get_user(changed_user)
+                    if discord_user:
+                        if info['pomodoro'] == Pomo.estado['descanso']:
+                            await discord_user.send(
+                                f'<@{changed_user}> BLOCO DE **ESTUDO TERMINADO!!** descanse por 5 minutos...',
+                                delete_after=180
+                            )
+                        elif info['pomodoro'] == Pomo.estado['estudo']:
+                            await discord_user.send(
+                                f'<@{changed_user}> BLOCO DE **DESCANSO TERMINADO!!** vamos voltar aos estudos...',
+                                delete_after=180
+                            )
+
+                # atualização da embed
+                if (info['pomodoro'] != Pomo.estado['desligado']) and (info.get('msg') != None) and (time.time() - info.get('embed_upd_timer', 0) > 30):
+
+                    # acha o canal 
+                    if info.get('is_dm'):
+                        discord_user = bot.get_user(user_id)
+                        if not discord_user:
+                            continue
+                        canal = await discord_user.create_dm()
+                    else:
+                        canal = bot.get_channel(info['canal'])
+
+                    if (canal is None):
+                        continue
+
+                    try:
+                        msg = await canal.fetch_message(info['msg'])
+                    except discord.NotFound:
+                        continue
+
+                    # traduz o bloco ativo
+                    if info['pomodoro'] == Pomo.estado['estudo']:
+                        bloco_act_pomo = 'estudo'
+                    elif info['pomodoro'] == Pomo.estado['descanso']:
+                        bloco_act_pomo = 'descanso'
+                    else:
+                        continue
+
+                    tempo = Pomo.tempo(user_id)
+                    blocos = Pomo.all_pomodoros[user_id]['blocos']
+
+                    # envia a embed atualizada
+                    await msg.edit(
+                        embed=embeds.embed_pomodoro(bloco_act_pomo, tempo, blocos)
+                    )
+
+                    info['embed_upd_timer'] = time.time()
 
         await asyncio.sleep(1)
 
@@ -150,24 +185,33 @@ async def on_command_error(ctx, error):
         print(f"Erro desconhecido: {error}")
 
 
-# -=-=- COMANDOS SLASH -=-=-
+    ####################
+    ## COMANDOS SLASH ##
+    ####################
 
-# -=- POMODORO -=-
-pomodoro = app_commands.Group(
-    name="pomodoro",
+
+#######################
+# CRONÔMETRO POMODORO #
+#######################
+cronômetro = app_commands.Group(
+    name="cronômetro",
     description="comandos do pomodoro"
 )
-bot.tree.add_command(pomodoro)
+bot.tree.add_command(cronômetro)
 
 # comando de start do pomodoro
-@pomodoro.command(name='start', description='inicia o pomodoro')
+@cronômetro.command(name='start', description='inicia o cronômetro')
 @app_commands.describe(
+    blocos='quantidade de blocos de estudo',
     estudo='tempo do bloco de estudo', 
     descanso='tempo do bloco de descanso'
 )
-async def pomodoro_start(interaction: discord.Interaction, estudo: int=25, descanso: int=5):
-    
+async def cronometro_start(interaction: discord.Interaction, blocos: int, estudo: int=25, descanso: int=5):
+        server_id = interaction.guild_id
         user_id = interaction.user.id
+
+        # add um ponto para o usuário no rank
+        Rank.add_in_rank(user_id=user_id, server_id=server_id)
 
         if isinstance(interaction.channel, discord.DMChannel):
             canal = await interaction.user.create_dm()
@@ -176,7 +220,7 @@ async def pomodoro_start(interaction: discord.Interaction, estudo: int=25, desca
             canal = interaction.channel
             is_dm = False
 
-        Pomo.start(user_id, canal.id, is_dm, estudo, descanso)
+        Pomo.start(user_id, canal.id, is_dm, blocos, estudo, descanso)
 
         if Pomo.all_pomodoros[user_id]['msg'] is None:
 
@@ -190,40 +234,46 @@ async def pomodoro_start(interaction: discord.Interaction, estudo: int=25, desca
 
             # carrega a envia a embed no chat
             await interaction.response.send_message(
-                embed=embeds.embed_pomodoro(bloco_act_pomo, tempo)
+                embed=embeds.embed_pomodoro(bloco_act_pomo, tempo, blocos)
                 )
-            
+
             # pega o id da embed pra poder editar ela 
             msg = await interaction.original_response()
             Pomo.all_pomodoros[user_id]['msg'] = msg.id
 
         else:
             await interaction.response.send_message(
-                'você já tem uma tabela pomodoro ativa',
+                'você já tem uma tabela cronômetro ativa',
                 ephemeral=True,
                 delete_after=5
                 )
 
 
-@pomodoro.command(name='stop', description='encerra o pomodoro')
-async def pomodoro_stop(interaction: discord.Interaction):
+@cronômetro.command(name='stop', description='encerra o pomodoro')
+async def cronometro_stop(interaction: discord.Interaction):
     user_id =interaction.user.id
+    server_id = interaction.guild_id
+
+    # add um ponto para o usuário no rank
+    Rank.add_in_rank(user_id=user_id, server_id=server_id)
+
     pomo = Pomo.stop(user_id)
     if pomo == False:
         await interaction.response.send_message(
-            'Pomodoro **não está ativo**, use o comando de **start** primeiro',
+            'Cronômetro **não está ativo**, use o comando de **start** primeiro',
             ephemeral=True,
             delete_after=5
             )
     else:
         await interaction.response.send_message(
-            'Pomodoro **desligado**',
+            'Cronômetro **desligado**',
             ephemeral=True
             )
 
 
-
-# -=- AGENDA DE TAREFAS -=-
+#####################
+# AGENDA DE TAREFAS #
+#####################
 agenda = app_commands.Group(
     name='agenda',
     description='agendamento de tarefas'
@@ -242,6 +292,10 @@ async def agenda_add(interaction: discord.Interaction, cargo: discord.Role, tare
     server_id = str(interaction.guild_id)
     cargo_id = cargo.id
     canal = interaction.channel.id
+    user = interaction.user.id
+
+    # add um ponto para o usuário no rank
+    Rank.add_in_rank(user_id=user, server_id=server_id)
 
     data_hora = Agenda.valid_data(data=data, time=hora)
 
@@ -249,7 +303,7 @@ async def agenda_add(interaction: discord.Interaction, cargo: discord.Role, tare
         # salva as infos da nova tarefa no json
         Agenda.add_task(server_id, cargo_id, tarefa, desc, data_hora, canal)
         await interaction.response.send_message(
-            embed= embeds.embed_simples(texto=f'Tarefa agendada com sucesso para o cargo <@&{cargo_id}>!!'),
+            embed= embeds.embed_simples(texto=f'Tarefa agendada para o cargo <@&{cargo_id}>!!'),
             ephemeral=True
         )
     else:
@@ -265,28 +319,59 @@ E insira uma **data futura**.'''
 @app_commands.describe(
     cargo = 'listar os lembretes apenas do cargo selecionado'
 )
-async def agenda_list(interaction: discord.Integration, cargo: discord.Role | None=None):
+async def agenda_list(interaction: discord.Interaction, cargo: discord.Role | None=None):
     server_id = str(interaction.guild_id)
+    user = interaction.user.id
 
-    if cargo is not None:
-        cargo_id = cargo.id
-        eventos_valid = Agenda.list_agenda(server_id, cargo_id)
-    else:
-        eventos_valid = Agenda.list_agenda(server_id=server_id)
+    if server_id in Agenda.load_agenda():
+        # add um ponto para o usuário no rank
+        Rank.add_in_rank(user_id=user, server_id=server_id)
 
-    if len(eventos_valid) != 0:
-        texto = "\n".join(eventos_valid)
-        await interaction.response.send_message(
-            embed= embeds.embed_simples(titulo='Lembretes Pendentes:', texto=texto)
-        )
+        if cargo is not None:
+            cargo_id = cargo.id
+            eventos_valid = Agenda.list_agenda(server_id, cargo_id)
+        else:
+            eventos_valid = Agenda.list_agenda(server_id=server_id)
+
+        if len(eventos_valid) != 0:
+            texto = "\n".join(eventos_valid)
+            await interaction.response.send_message(
+                embed= embeds.embed_simples(titulo='Lembretes Pendentes:', texto=texto)
+            )
+        else:
+            await interaction.response.send_message(
+                embed=embeds.embed_simples(texto='não existe nenhum lembrete agendado', cor=discord.Color.red())
+            )
     else:
         await interaction.response.send_message(
             embed=embeds.embed_simples(texto='não existe nenhum lembrete agendado', cor=discord.Color.red())
         )
 
 
+########
+# RANK #
+########
+@bot.tree.command(name='rank', description='top usuários do bot')
+async def rank(interaction: discord.Interaction):
+    server_id = interaction.guild_id
 
-# -=-=- COMANDOS DE PREFIXO -=-=-
+    top3 = Rank.show_rank(server=server_id)
+
+    if top3 == []:
+        await interaction.response.send_message(
+            embed=embeds.embed_simples(texto='este servidor ainda não tem uma classificação', cor=discord.Color.red()),
+            allowed_mentions=discord.AllowedMentions(users=True)
+        )
+    else:
+        await interaction.response.send_message(
+            embed=embeds.embed_rank(top3, server_id)
+        )
+
+
+
+    #########################
+    ## COMANDOS DE PREFIXO ##
+    #########################
 
 # github
 @bot.command()
@@ -295,14 +380,16 @@ async def github(ctx):
         embed=embeds.embed_simples(titulo='Github do adm:', texto='https://github.com/THmaguetas') 
         )
 
+
 # spam mention 
 @bot.command()
 async def mention(ctx, membro: str):
     id_membro = int(membro.strip('<@!>'))
     membro_pronto = ctx.guild.get_member(id_membro)
     if membro_pronto:
-        for _ in range(1, 41):
+        for _ in range(0, 40):
             await ctx.send(f'{membro_pronto.mention}')
+
 
 # limpeza de chat
 @bot.command()
@@ -313,24 +400,28 @@ async def clear(ctx, quantidade: int = 100):
             f'<@{ctx.author.id}> você não tem permissão para usar esse comando',
             delete_after=6
         )
+    else:
+        # valida quantidade
+        if quantidade < 1:
+            await ctx.send(
+                "A quantidade deve ser maior que 0.",
+                delete_after=5
+            )
+        elif quantidade > 100:
+            await ctx.send(
+                "O bot não limpa mais do que 100 mensagens por vez.",
+                delete_after=6
+            )
 
-    # valida quantidade
-    if quantidade < 1:
-        await ctx.send(
-            "A quantidade deve ser maior que 0.",
-            delete_after=5
-        )
+        else:
+            Rank.add_in_rank(ctx.author.id, ctx.author.guild.id)
 
-    if quantidade > 100:
-        await ctx.send(
-            "O bot não limpa mais do que 100 mensagens por vez.",
-            delete_after=6
-        )
-
-    # apaga mensagens (+1 para apagar o comando)
-    await ctx.channel.purge(limit=quantidade + 1)
+            # apaga mensagens (+1 para apagar o comando)
+            await ctx.channel.purge(limit=quantidade + 1)
 
 
-# -=- TOKEN DO BOT -=-
+    ##################
+    ## TOKEN DO BOT ##
+    ##################
 token = os.getenv("THEO_TOKEN")
 bot.run(token)
