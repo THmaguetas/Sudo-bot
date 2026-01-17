@@ -243,7 +243,7 @@ async def cronometro_start(interaction: discord.Interaction, blocos: int, estudo
 
         else:
             await interaction.response.send_message(
-                'você já tem uma tabela cronômetro ativa',
+                embed=embeds.embed_simples(texto='você já tem uma tabela cronômetro ativa', cor=discord.Color.red()),
                 ephemeral=True,
                 delete_after=5
                 )
@@ -260,13 +260,13 @@ async def cronometro_stop(interaction: discord.Interaction):
     pomo = Pomo.stop(user_id)
     if pomo == False:
         await interaction.response.send_message(
-            'Cronômetro **não está ativo**, use o comando de **start** primeiro',
+            embed=embeds.embed_simples(texto='Cronômetro **não está ativo**, use o comando de **start** primeiro', cor=discord.Color.red()),
             ephemeral=True,
             delete_after=5
             )
     else:
         await interaction.response.send_message(
-            'Cronômetro **desligado**',
+            embed=embeds.embed_simples(texto='Cronômetro **desligado**', cor=discord.Color.red()),
             ephemeral=True
             )
 
@@ -311,7 +311,8 @@ async def agenda_add(interaction: discord.Interaction, cargo: discord.Role, tare
 Siga os padrões BR: **dia/mês/ano**  e  **hora:minuto**.    
 E insira uma **data futura**.'''        
         await interaction.response.send_message(
-            embed=embeds.embed_simples(titulo='ERRO!', texto=texto, cor=discord.Color.red())            
+            embed=embeds.embed_simples(titulo='ERRO!', texto=texto, cor=discord.Color.red()),
+            ephemeral=True       
         )
 
 
