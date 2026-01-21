@@ -12,11 +12,6 @@ Atualmente, ele oferece comandos para estudo comunitário, organização e acomp
 - Sistema de rank para engajamento dos membros
 - Comando de prefixo para limpeza de mensagens (`.clear`)
 
-## 🛠️ Tecnologias utilizadas
-- Python
-- discord.py
-- JSON (armazenamento simples de dados)
-
 ## 🚀 Como usar
 1. Adicione o bot ao seu servidor pelo link abaixo
 2. Utilize os comandos diretamente no chat do Discord

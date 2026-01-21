@@ -424,5 +424,5 @@ async def clear(ctx, quantidade: int = 100):
     ##################
     ## TOKEN DO BOT ##
     ##################
-token = os.getenv("THEO_TOKEN")
+token = os.getenv("SUDO_TOKEN")
 bot.run(token)
