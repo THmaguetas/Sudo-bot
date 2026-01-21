@@ -51,10 +51,10 @@ def embed_agenda(title, desc, cargo):
     return embed
 
 
-def embed_rank(top3, server):
+def embed_cmd_rank(top3):
     embed = discord.Embed(
         title="🏆 TOP 3 DO SERVIDOR",
-        description="Os usuários com mais comandos rodados são:",
+        description="**Categoria:** Comandos Rodados.",
         color=discord.Color.gold()
     )
 
@@ -66,6 +66,31 @@ def embed_rank(top3, server):
             value=(
                 f"👤 Usuário: <@{user_id}>\n"
                 f"📊 Comandos usados: **{info['quant_comandos']}**"
+            ),
+            inline=False
+        )
+
+    embed.set_footer(text="Server Rating")
+    embed.timestamp = discord.utils.utcnow()
+
+    return embed
+
+
+def embed_temp_rank(top3):
+    embed = discord.Embed(
+        title="🏆 TOP 3 DO SERVIDOR",
+        description="**Categoria:** Tempo de Estudo.",
+        color=discord.Color.gold()
+    )
+
+    medalhas = ['🥇', '🥈', '🥉']
+    for posit, (user_id, info) in enumerate(top3):
+        user_id = int(user_id)
+        embed.add_field(
+            name=f"{medalhas[posit]} Top {posit + 1}",
+            value=(
+                f"👤 Usuário: <@{user_id}>\n"
+                f"📊 Tempo estudado: **{int(info['temp_estudo']/60)}** min"
             ),
             inline=False
         )

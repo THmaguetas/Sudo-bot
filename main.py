@@ -2,11 +2,14 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.errors import NotFound, Forbidden, HTTPException
+
 import asyncio
 import time
 from datetime import datetime
+
 import os
 from dotenv import load_dotenv
+
 from modulos import embeds
 from modulos import Pomo
 from modulos import Agenda
@@ -211,7 +214,7 @@ async def cronometro_start(interaction: discord.Interaction, blocos: int, estudo
             canal = interaction.channel
             is_dm = False
 
-        Pomo.start(user_id, canal.id, is_dm, blocos, estudo, descanso)
+        Pomo.start(server_id, user_id, canal.id, is_dm, blocos, estudo, descanso)
 
         if Pomo.all_pomodoros[user_id]['msg'] is None:
 
@@ -347,16 +350,22 @@ async def agenda_list(interaction: discord.Interaction, cargo: discord.Role | No
 async def rank(interaction: discord.Interaction):
     server_id = interaction.guild_id
 
-    top3 = Rank.show_rank(server=server_id)
+    top3_cmd = Rank.show_cmd_rank(server=server_id)
+    top3_temp = Rank.show_temp_rank(server=server_id)
 
-    if top3 == []:
+    if top3_cmd == []:
         await interaction.response.send_message(
             embed=embeds.embed_simples(texto='este servidor ainda não tem uma classificação', cor=discord.Color.red()),
             allowed_mentions=discord.AllowedMentions(users=True)
         )
+
     else:
+        resposta_embeds = [embeds.embed_cmd_rank(top3_cmd)]
+        if top3_temp != []:
+            resposta_embeds.append(embeds.embed_temp_rank(top3_temp))
+
         await interaction.response.send_message(
-            embed=embeds.embed_rank(top3, server_id)
+            embeds=resposta_embeds
         )
 
 

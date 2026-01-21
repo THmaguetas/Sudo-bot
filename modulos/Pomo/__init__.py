@@ -1,4 +1,5 @@
 import time
+from modulos import Rank
 
 estado = {
     'estudo' : True,
@@ -9,19 +10,20 @@ estado = {
 all_pomodoros = {}
 
 info_user = {
+    'server_id' : None,
     'canal' : None,
     'msg' : None,
     'is_dm' : False,
     'embed_upd_timer' : 0,
     'pomodoro' : False,
-    'blocos' : 0,
+    'blocos' : None,
     'time_start' : float,
     'temp_estudo' : int,
     'temp_descanso' : int
 }
 
 
-def start(user, canal_id, is_dm, blocos, estudo, descanso):
+def start(server_id, user, canal_id, is_dm, blocos, estudo, descanso):
     if user not in all_pomodoros:
         all_pomodoros[user] = info_user.copy()
 
@@ -34,6 +36,7 @@ def start(user, canal_id, is_dm, blocos, estudo, descanso):
         all_pomodoros[user]['pomodoro'] = estado['estudo']
         all_pomodoros[user]['time_start'] = time.time()
 
+        all_pomodoros[user]['server_id'] = server_id
         all_pomodoros[user]['canal'] = canal_id
         all_pomodoros[user]['is_dm'] = is_dm
         return True
@@ -70,8 +73,10 @@ def verify_time_pomodoro(usr, inf):
 
             inf['pomodoro'] = estado['descanso']
             inf['time_start'] = time.time()
+
+            Rank.add_time_in_rank(usr, str(inf['server_id']), int(inf['temp_estudo']))
             return usr
-    
+
 
     elif inf['pomodoro'] == estado['descanso']:
 
@@ -83,6 +88,7 @@ def verify_time_pomodoro(usr, inf):
             inf['time_start'] = time.time()
             inf['blocos'] -= 1
             return usr
-            
-    return None
+        
+    else:    
+        return None
 
