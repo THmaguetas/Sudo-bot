@@ -69,44 +69,35 @@ async def verify_agenda():
 async def verify_upd_embed_pomo():
     while True:
         for user_id, info in Pomo.all_pomodoros.items():
+            if info['pomodoro'] != Pomo.estado['desligado']:
+                # verifica troca de bloco
+                changed_user = Pomo.verify_time_pomodoro(usr=user_id, inf=info)
+                discord_user = bot.get_user(changed_user)
 
-            # verifica troca de bloco
-            changed_user = Pomo.verify_time_pomodoro(usr=user_id, inf=info)
-
-            if info['blocos'] <= 0 and info['pomodoro'] != Pomo.estado['desligado']:
-                info['pomodoro'] = Pomo.estado['desligado']
-                await discord_user.send(
-                    embed=embeds.embed_simples(texto='Seus blocos de estudo acabaram!! Parabéns!', cor=discord.Color.green()),
-                    delete_after=360
-                )
-
-                try:
-                    msg = await canal.fetch_message(info['msg'])
-                except discord.NotFound:
-                    continue
-
-                # traduz o bloco ativo
-                if info['pomodoro'] == Pomo.estado['estudo']:
-                    bloco_act_pomo = 'estudo'
-                elif info['pomodoro'] == Pomo.estado['descanso']:
-                    bloco_act_pomo = 'descanso'
-                elif info['pomodoro'] == Pomo.estado['desligado']:
-                    bloco_act_pomo = 'desligado'
-                tempo = Pomo.tempo(user_id)
-                blocos = Pomo.all_pomodoros[user_id]['blocos']
-
-                # envia a embed atualizada
-                await msg.edit(
-                    embed=embeds.embed_pomodoro(bloco_act_pomo, tempo, blocos)
+                if info['blocos'] <= 0:
+                    await discord_user.send(
+                        embed=embeds.embed_simples(texto='Seus blocos de estudo acabaram!! Parabéns!', cor=discord.Color.green()),
+                        delete_after=360
                     )
 
+                    try:
+                        msg = await canal.fetch_message(info['msg'])
+                    except discord.NotFound:
+                        continue
 
-            else:
+                    # envia a embed final
+                    await msg.edit(
+                        embed=embeds.embed_pomodoro('desligado', 0, 0)
+                        )
 
-                # notificação no pv do cabra
-                if changed_user:
-                    discord_user = bot.get_user(changed_user)
-                    if discord_user:
+                    # desliga/reseta o pomodoro
+                    Pomo.stop(user_id)
+                    continue
+
+
+                else:
+                    # notificação no pv do cabra
+                    if changed_user and discord_user:
                         if info['pomodoro'] == Pomo.estado['descanso']:
                             await discord_user.send(
                                 f'<@{changed_user}> BLOCO DE **ESTUDO TERMINADO!!** descanse por 5 minutos...',
@@ -118,43 +109,43 @@ async def verify_upd_embed_pomo():
                                 delete_after=180
                             )
 
-                # atualização da embed
-                if (info['pomodoro'] != Pomo.estado['desligado']) and (info.get('msg') != None) and (time.time() - info.get('embed_upd_timer', 0) > 30):
+                    # atualização da embed
+                    if (info['pomodoro'] != Pomo.estado['desligado']) and (info.get('msg') != None) and (time.time() - info.get('embed_upd_timer', 0) > 30):
 
-                    # acha o canal 
-                    if info.get('is_dm'):
-                        discord_user = bot.get_user(user_id)
-                        if not discord_user:
+                        # acha o canal 
+                        if info.get('is_dm'):
+                            discord_user = bot.get_user(user_id)
+                            if not discord_user:
+                                continue
+                            canal = await discord_user.create_dm()
+                        else:
+                            canal = bot.get_channel(info['canal'])
+
+                        if (canal is None):
                             continue
-                        canal = await discord_user.create_dm()
-                    else:
-                        canal = bot.get_channel(info['canal'])
 
-                    if (canal is None):
-                        continue
+                        try:
+                            msg = await canal.fetch_message(info['msg'])
+                        except discord.NotFound:
+                            continue
 
-                    try:
-                        msg = await canal.fetch_message(info['msg'])
-                    except discord.NotFound:
-                        continue
+                        # traduz o bloco ativo
+                        if info['pomodoro'] == Pomo.estado['estudo']:
+                            bloco_act_pomo = 'estudo'
+                        elif info['pomodoro'] == Pomo.estado['descanso']:
+                            bloco_act_pomo = 'descanso'
+                        else:
+                            continue
 
-                    # traduz o bloco ativo
-                    if info['pomodoro'] == Pomo.estado['estudo']:
-                        bloco_act_pomo = 'estudo'
-                    elif info['pomodoro'] == Pomo.estado['descanso']:
-                        bloco_act_pomo = 'descanso'
-                    else:
-                        continue
+                        tempo = Pomo.tempo(user_id)
+                        blocos = Pomo.all_pomodoros[user_id]['blocos']
 
-                    tempo = Pomo.tempo(user_id)
-                    blocos = Pomo.all_pomodoros[user_id]['blocos']
+                        # envia a embed atualizada
+                        await msg.edit(
+                            embed=embeds.embed_pomodoro(bloco_act_pomo, tempo, blocos)
+                        )
 
-                    # envia a embed atualizada
-                    await msg.edit(
-                        embed=embeds.embed_pomodoro(bloco_act_pomo, tempo, blocos)
-                    )
-
-                    info['embed_upd_timer'] = time.time()
+                        info['embed_upd_timer'] = time.time()
 
         await asyncio.sleep(1)
 
@@ -337,7 +328,7 @@ async def agenda_list(interaction: discord.Interaction, cargo: discord.Role | No
         if len(eventos_valid) != 0:
             texto = "\n".join(eventos_valid)
             await interaction.response.send_message(
-                embed= embeds.embed_simples(titulo='Lembretes Pendentes:', texto=texto)
+                embed= embeds.embed_simples(titulo='📅 Lembretes Pendentes:', texto=texto)
             )
         else:
             await interaction.response.send_message(
