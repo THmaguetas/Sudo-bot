@@ -72,16 +72,23 @@ def show_cmd_rank(server):
 
 def show_temp_rank(server):
     rank_list = load_rank()
-
     server = str(server)
 
     if server not in rank_list:
         return []
-    
+
+    valid_users = {
+        user_id: info
+        for user_id, info in rank_list[server].items()
+        if info['temp_estudo'] > 0
+    }
+    if not valid_users:
+        return []
+
     top3 = sorted(
-        rank_list[server].items(), 
-        key=lambda i: i[1]['temp_estudo'], 
+        valid_users.items(),
+        key=lambda i: i[1]['temp_estudo'],
         reverse=True
-        )[:3]
-    return top3 
+    )[:3]
+    return top3
 
