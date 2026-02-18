@@ -32,11 +32,11 @@ def embed_pomodoro(bloco_atual, tempo_restante, blocos):
     return embed
 
 
-def embed_agenda(title, desc, cargo):
+def embed_agenda_lembrete(title, desc, cargo, data):
     embed = discord.Embed(
-        title=f"⏰ {title}",
-        description=f"🔔 **Lembrete para:** <@&{cargo}>",
-        color=discord.Color.green(),
+        title=f"📔 {title}",
+        description=f"🔔 Lembrete **agendado** para: <@&{cargo}>",
+        color=discord.Color.dark_green(),
     )
 
     embed.add_field(
@@ -44,6 +44,24 @@ def embed_agenda(title, desc, cargo):
         value=desc if desc.strip() else "Sem descrição.",
         inline=False
     )
+
+    embed.add_field(
+        name = "🗓️ Data de entrega:",
+        value= f"{data}",
+        inline = False
+    )
+
+    embed.set_footer(text="Agenda • Lembrete agendado")
+
+    return embed
+
+
+def embed_entrega_lembrete(title, cargo):
+    embed = discord.Embed(
+        title= f"⏰ Entrega de: {title}",
+        description=f"🔔**Entrega** do lembrete para: <@&{cargo}>",
+        color= discord.Color.orange()
+    )   
 
     embed.set_footer(text="Agenda • Lembrete automático")
     embed.timestamp = discord.utils.utcnow()

@@ -50,9 +50,8 @@ async def verify_agenda():
                         try:
                             await canal.send(
                                 f"🔔 <@&{items['cargo']}> 🔔",
-                                embed=embeds.embed_agenda(
+                                embed=embeds.embed_entrega_lembrete(
                                     title=items["tarefa"],
-                                    desc=items["descricao"],
                                     cargo=items["cargo"]
                                 )
                             )
@@ -183,6 +182,9 @@ async def on_command_error(ctx, error):
     ## COMANDOS SLASH ##
     ####################
 
+####################
+## STUDY COMMANDS ##
+####################
 
 #######################
 # CRONÔMETRO POMODORO #
@@ -296,9 +298,15 @@ async def agenda_add(interaction: discord.Interaction, cargo: discord.Role, tare
     if data_hora != False:
         # salva as infos da nova tarefa no json
         Agenda.add_task(server_id, cargo_id, tarefa, desc, data_hora, canal)
+
         await interaction.response.send_message(
-            embed= embeds.embed_simples(texto=f'Tarefa agendada para o cargo <@&{cargo_id}>!!'),
-            ephemeral=True
+            embed=embeds.embed_agenda_lembrete(
+                title= tarefa,
+                desc= desc,
+                cargo= cargo_id,
+                data= data_hora
+            )
+
         )
     else:
         texto = '''Digite a data ou a hora da maneira correta. 
@@ -343,6 +351,7 @@ async def agenda_list(interaction: discord.Interaction, cargo: discord.Role | No
         )
 
 
+
 ########
 # RANK #
 ########
@@ -367,6 +376,9 @@ async def rank(interaction: discord.Interaction):
         await interaction.response.send_message(
             embeds=resposta_embeds
         )
+
+
+
 
 
 
@@ -424,5 +436,5 @@ async def clear(ctx, quantidade: int = 100):
     ##################
     ## TOKEN DO BOT ##
     ##################
-token = os.getenv("SUDO_TOKEN")
+token = os.getenv("THEO_TOKEN")
 bot.run(token)

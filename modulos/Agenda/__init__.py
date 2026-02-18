@@ -62,12 +62,14 @@ def list_agenda(server_id, cargo_id=None):
     if cargo_id == None:
         for evento_id, itens in agenda_json[server_id].items():
             if itens['notificado'] is False:
-                eventos_validos.append(itens["tarefa"])
+                lembrete = f"📌 {itens['tarefa']} —  {itens['data_hora']}"
+                eventos_validos.append(lembrete)
                 
     else:
         for evento_id, itens in agenda_json[server_id].items():
             if itens['notificado'] is False and itens['cargo'] == cargo_id:
-                eventos_validos.append(itens["tarefa"])
+                lembrete = f"📌 {itens['tarefa']} —  {itens['data_hora']}"
+                eventos_validos.append(lembrete)
     
     return eventos_validos
 
