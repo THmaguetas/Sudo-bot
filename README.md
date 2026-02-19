@@ -1,10 +1,10 @@
-# 📚 Bot de Estudos para Discord
+# 📚 Sudo discord bot
 
 ---
 
 ## 📖 Sobre
-Este projeto é um bot do Discord focado em auxiliar estudos dentro de servidores.
-Atualmente, ele oferece comandos para estudo comunitário, organização e acompanhamento de atividades.
+Este projeto é um bot do aplicativo Discord, atualmente focado em auxiliar estudos dentro de servidores.
+No momento ele oferece comandos para estudo comunitário, organização e acompanhamento de atividades.
 
 ## ⚙️ Funcionalidades
 - Cronômetro para sessões de estudo
