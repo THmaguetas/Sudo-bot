@@ -378,7 +378,30 @@ async def rank(interaction: discord.Interaction):
         )
 
 
+##################
+## ADM COMMANDS ##
+##################
+adm = app_commands.Group(
+    name='adm',
+    description='adm commands'
+)
+bot.tree.add_command(adm)
 
+@adm.command(name='ban', description='permite adm banir usuário mais facilmente')
+@app_commands.checks.has_permissions(ban_members=True)
+@app_commands.describe(
+    user = 'menção do usuário que será banido'
+)
+async def ban(interaction: discord.Interaction, user: str):
+    
+
+    # tentando dar um jeito em como filtrar tanto mention quanto id para conseguir banir até usuários que não estão no server
+    print(user)
+    #await interaction.guild.ban(user)
+
+    await interaction.response.send_message(
+        f'{user} banido'
+    )
 
 
 
@@ -436,5 +459,5 @@ async def clear(ctx, quantidade: int = 100):
     ##################
     ## TOKEN DO BOT ##
     ##################
-token = os.getenv("THEO_TOKEN")
+token = os.getenv("SUDO_TOKEN")
 bot.run(token)
