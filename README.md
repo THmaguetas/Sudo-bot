@@ -24,4 +24,4 @@ https://discord.com/oauth2/authorize?client_id=1452855081862041753
 ---
 
 ## 📌 Status do projeto
-🚧 Em desenvolvimento
+🚧 Desenvolvimento pausado, comandos de adm imcompletos.
