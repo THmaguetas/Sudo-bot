@@ -12,16 +12,17 @@ No momento ele oferece comandos para estudo comunitário, organização e acompa
 - Sistema de rank para engajamento dos membros
 - Comando de prefixo para limpeza de mensagens (`.clear`)
 
-## 🚀 Como usar
+---
+
+# 🚀 Como usar
 1. Adicione o bot ao seu servidor pelo link abaixo
 2. Utilize os comandos diretamente no chat do Discord
-
----
 
 ## 🔗 Link do bot
 https://discord.com/oauth2/authorize?client_id=1452855081862041753
 
 ---
 
-## 📌 Status do projeto
-🚧 Desenvolvimento pausado, comandos de adm imcompletos.
+# 📌 Status do projeto
+🚧 Em desenvolvimento; Projeto Pausado.
+    (comandos de adm incompletos)
